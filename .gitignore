@@ -20,7 +20,9 @@ db.sqlite3
 *.cache
 *.pid
 # Archivos de migraciones (opcional, solo en desarrollo)
-**/migrations/**
+# Se permite versionar las migraciones; quitar la siguiente línea si
+# prefieres ignorarlas completamente.
+# **/migrations/**
 # Archivos del sistema operativo
 DS_Store
 # Archivos multimedia y estáticos generados
