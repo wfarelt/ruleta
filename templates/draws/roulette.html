@@ -2,17 +2,36 @@
 {% block content %}
 
 <div class="container text-center mt-5">
-    <h2>{{ pasanaku.name }}</h2>
+    <div class="row">
+        <div class="col-md-8">
+            <h2>{{ pasanaku.name }}</h2>
 
-    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+            <canvas id="wheelCanvas" width="500" height="500"></canvas>
 
-    <br><br>
+            <br><br>
 
-    <button id="spinButton" class="btn btn-primary">
-        Girar Ruleta
-    </button>
+            <button id="spinButton" class="btn btn-primary">
+                Girar Ruleta
+            </button>
 
-    <h3 class="mt-4" id="winnerText"></h3>
+            <h3 class="mt-4" id="winnerText"></h3>
+        </div>
+        <div class="col-md-4">
+            <h4>Participantes</h4>
+            <ul class="list-group text-start">
+                {% for p in participants_all %}
+                    {% if p.is_winner %}
+                        <li class="list-group-item list-group-item-success">
+                            {{ p.participant.full_name }} 
+                            <span class="badge bg-success float-end">Ganador</span>
+                        </li>
+                    {% else %}
+                        <li class="list-group-item">{{ p.participant.full_name }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 </div>
 
 <!-- Winwheel CDN -->
@@ -75,8 +94,8 @@
 
             wheel.animation.stopAngle = wheel.getRandomForSegment(stopAt);
 
-            wheel.animation.callbackFinished = function() {
 
+            wheel.animation.callbackFinished = function() {
                 document.getElementById("winnerText").innerHTML =
                     "🎉 Ganador: " + data.winner_name;
 
@@ -87,6 +106,11 @@
                 }
 
                 buildWheel();
+
+                // Refrescar la vista después de 2 segundos
+                setTimeout(function() {
+                    window.location.reload();
+                }, 2000);
             };
 
             wheel.startAnimation();
