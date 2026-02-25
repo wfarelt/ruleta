@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container text-center mt-5">
+    <h2>{{ pasanaku.name }}</h2>
+
+    <canvas id="wheelCanvas" width="500" height="500"></canvas>
+
+    <br><br>
+
+    <button id="spinButton" class="btn btn-primary">
+        Girar Ruleta
+    </button>
+
+    <h3 class="mt-4" id="winnerText"></h3>
+</div>
+
+<!-- Winwheel CDN -->
+
+{% load static %}
+
+<script src="{% static 'js/Winwheel.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<script>
+    const participants = [
+        {% for p in participants %}
+            { text: "{{ p.participant.full_name }}" },
+        {% endfor %}
+    ];
+
+    const wheel = new Winwheel({
+        canvasId: 'wheelCanvas',
+        numSegments: participants.length,
+        segments: participants,
+        animation: {
+            type: 'spinToStop',
+            duration: 5,
+            spins: 8,
+            callbackFinished: alertWinner
+        }
+    });
+
+    document.getElementById('spinButton').addEventListener('click', function() {
+        fetch("/draws/execute/{{ pasanaku.id }}/")
+        .then(response => response.text())
+        .then(data => {
+            wheel.startAnimation();
+        });
+    });
+
+    function alertWinner(indicatedSegment) {
+        document.getElementById("winnerText").innerHTML =
+            "Ganador: " + indicatedSegment.text;
+    }
+</script>
+
+{% endblock %}
