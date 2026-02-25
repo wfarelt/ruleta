@@ -18,41 +18,80 @@
 <!-- Winwheel CDN -->
 
 {% load static %}
+{% csrf_token %}
 
 <script src="{% static 'js/Winwheel.js' %}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
 <script>
-    const participants = [
+    let participants = [
         {% for p in participants %}
-            { text: "{{ p.participant.full_name }}" },
+            {
+                id: {{ p.id }},
+                text: "{{ p.participant.full_name }}"
+            },
         {% endfor %}
     ];
 
-    const wheel = new Winwheel({
-        canvasId: 'wheelCanvas',
-        numSegments: participants.length,
-        segments: participants,
-        animation: {
-            type: 'spinToStop',
-            duration: 5,
-            spins: 8,
-            callbackFinished: alertWinner
-        }
-    });
+    let wheel;
+
+    function buildWheel() {
+
+        wheel = new Winwheel({
+            canvasId: 'wheelCanvas',
+            numSegments: participants.length,
+            segments: participants.map(p => ({
+                text: p.text
+            })),
+            animation: {
+                type: 'spinToStop',
+                duration: 5,
+                spins: 8
+            }
+        });
+    }
+
+    buildWheel();
 
     document.getElementById('spinButton').addEventListener('click', function() {
-        fetch("/draws/execute/{{ pasanaku.id }}/")
-        .then(response => response.text())
+
+        fetch("/draws/execute/{{ pasanaku.id }}/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        })
+        .then(response => response.json())
         .then(data => {
+
+            if (!data.success) {
+                alert(data.message);
+                return;
+            }
+
+            let winnerIndex = participants.findIndex(p => p.id === data.winner_id);
+
+            let stopAt = winnerIndex + 1;
+
+            wheel.animation.stopAngle = wheel.getRandomForSegment(stopAt);
+
+            wheel.animation.callbackFinished = function() {
+
+                document.getElementById("winnerText").innerHTML =
+                    "🎉 Ganador: " + data.winner_name;
+
+                participants.splice(winnerIndex, 1);
+
+                if (participants.length === 0) {
+                    document.getElementById("spinButton").disabled = true;
+                }
+
+                buildWheel();
+            };
+
             wheel.startAnimation();
         });
     });
-
-    function alertWinner(indicatedSegment) {
-        document.getElementById("winnerText").innerHTML =
-            "Ganador: " + indicatedSegment.text;
-    }
 </script>
 
 {% endblock %}
