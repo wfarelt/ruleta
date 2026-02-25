@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <h2>Dashboard — Resumen</h2>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Pasanakus</h5>
+                    <p class="card-text display-6">{{ total_pasanakus }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Participantes</h5>
+                    <p class="card-text display-6">{{ total_participants }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Sorteos</h5>
+                    <p class="card-text display-6">{{ total_draws }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <h4>Últimos sorteos</h4>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Pasanaku</th>
+                        <th>Ganador</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in recent_draws %}
+                    <tr>
+                        <td>{{ d.draw_number }}</td>
+                        <td>{{ d.pasanaku.name }}</td>
+                        <td>{{ d.participation.participant.full_name }}</td>
+                        <td>{{ d.draw_date|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No hay sorteos recientes.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-md-6">
+            <h4>Últimos ganadores</h4>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Posición</th>
+                        <th>Nombre</th>
+                        <th>Pasanaku</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for w in recent_winners %}
+                    <tr>
+                        <td>{{ w.winning_position }}</td>
+                        <td>{{ w.participant.full_name }}</td>
+                        <td>{{ w.pasanaku.name }}</td>
+                        <td>{{ w.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No hay ganadores recientes.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h4>Top Pasanakus por participantes</h4>
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Pasanaku</th>
+                        <th>Participantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in pasanakus_participants %}
+                    <tr>
+                        <td>{{ p.name }}</td>
+                        <td>{{ p.participants_count }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2">No hay pasanakus aún.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-5">
+    <h2>Historial de Ganadores — {{ pasanaku.name }}</h2>
+
+    {% if winners.exists %}
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th>Posición</th>
+                    <th>Nombre</th>
+                    <th>Teléfono</th>
+                    <th>Email</th>
+                    <th>Fecha de participación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in winners %}
+                <tr>
+                    <td>{{ w.winning_position }}</td>
+                    <td>{{ w.participant.full_name }}</td>
+                    <td>{{ w.participant.phone|default:"-" }}</td>
+                    <td>{{ w.participant.email|default:"-" }}</td>
+                    <td>{{ w.created_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="mt-4">Aún no hay ganadores registrados para este pasanaku.</p>
+    {% endif %}
+
+    <a href="/draws/roulette/{{ pasanaku.id }}/" class="btn btn-secondary mt-3">Volver a la ruleta</a>
+</div>
+
+{% endblock %}
