@@ -8,6 +8,7 @@ from .models import Draw
 from .services import perform_draw
 from participants.models import Participant
 from django.db.models import Count
+from django.views.decorators.csrf import csrf_exempt
 
 
 def execute_draw(request, pasanaku_id):
@@ -61,3 +62,14 @@ def draw_history(request, pasanaku_id):
         'pasanaku': pasanaku,
         'winners': winners
     })
+
+
+@require_POST
+@csrf_exempt
+def reset_draw(request, pasanaku_id):
+    pasanaku = get_object_or_404(Pasanaku, id=pasanaku_id)
+    # Quitar el flag de ganador y posición a todos los participantes
+    Participation.objects.filter(pasanaku=pasanaku).update(is_winner=False, winning_position=None)
+    # Eliminar los registros de Draw
+    Draw.objects.filter(pasanaku=pasanaku).delete()
+    return JsonResponse({"success": True})

@@ -14,6 +14,10 @@
                 Girar Ruleta
             </button>
 
+            <button id="resetButton" class="btn btn-warning" style="display:none;">
+                Reiniciar Juego
+            </button>
+
             <h3 class="mt-4" id="winnerText"></h3>
         </div>
         <div class="col-md-4">
@@ -72,6 +76,31 @@
 
     buildWheel();
 
+    // Mostrar el botón de reinicio si ya no hay participantes al cargar la página
+    if (participants.length === 0) {
+        document.getElementById("spinButton").disabled = true;
+        document.getElementById("resetButton").style.display = "inline-block";
+    }
+
+    // Listener para el botón de reinicio (solo una vez)
+    document.getElementById("resetButton").addEventListener("click", function() {
+        if (!confirm("¿Seguro que deseas reiniciar el juego?")) return;
+        fetch("/draws/reset/{{ pasanaku.id }}/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message);
+            }
+        });
+    });
+
     document.getElementById('spinButton').addEventListener('click', function() {
 
         fetch("/draws/execute/{{ pasanaku.id }}/", {
@@ -103,6 +132,7 @@
 
                 if (participants.length === 0) {
                     document.getElementById("spinButton").disabled = true;
+                    document.getElementById("resetButton").style.display = "inline-block";
                 }
 
                 buildWheel();
