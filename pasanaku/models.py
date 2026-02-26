@@ -35,10 +35,16 @@ class Pasanaku(models.Model):
         verbose_name="Draws Per Month"
     )
 
+
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='active'
+    )
+
+    rotation_angle = models.FloatField(
+        default=0.0,
+        verbose_name="Rotation Angle"
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

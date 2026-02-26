@@ -1,5 +1,8 @@
+
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
@@ -8,12 +11,16 @@ from .models import Draw
 from .services import perform_draw
 from participants.models import Participant
 from django.db.models import Count
-from django.views.decorators.csrf import csrf_exempt
+
 
 
 def execute_draw(request, pasanaku_id):
-
     pasanaku = get_object_or_404(Pasanaku, id=pasanaku_id)
+
+    # Recibir el ángulo actual desde el frontend
+    rotation_angle = float(request.POST.get('rotation_angle', 0))
+    pasanaku.rotation_angle = rotation_angle
+    pasanaku.save(update_fields=['rotation_angle'])
 
     winner = perform_draw(pasanaku)
 
@@ -27,8 +34,10 @@ def execute_draw(request, pasanaku_id):
         "success": True,
         "winner_id": winner.id,
         "winner_name": winner.participant.full_name,
-        "position": winner.winning_position
+        "position": winner.winning_position,
+        "rotation_angle": pasanaku.rotation_angle
     })
+
 
 
 def roulette_view(request, pasanaku_id):
@@ -46,7 +55,8 @@ def roulette_view(request, pasanaku_id):
     return render(request, 'draws/roulette.html', {
         'pasanaku': pasanaku,
         'participants': participants,
-        'participants_all': participants_all
+        'participants_all': participants_all,
+        'rotation_angle': pasanaku.rotation_angle
     })
 
 
@@ -73,3 +83,12 @@ def reset_draw(request, pasanaku_id):
     # Eliminar los registros de Draw
     Draw.objects.filter(pasanaku=pasanaku).delete()
     return JsonResponse({"success": True})
+
+@require_POST
+@csrf_exempt
+def save_rotation_angle(request, pasanaku_id):
+    pasanaku = get_object_or_404(Pasanaku, id=pasanaku_id)
+    rotation_angle = float(request.POST.get('rotation_angle', 0))
+    pasanaku.rotation_angle = rotation_angle
+    pasanaku.save(update_fields=['rotation_angle'])
+    return JsonResponse({"success": True, "rotation_angle": pasanaku.rotation_angle})

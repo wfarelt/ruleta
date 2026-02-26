@@ -5,8 +5,22 @@
     <div class="row">
         <div class="col-md-8">
             <h2>{{ pasanaku.name }}</h2>
+            <br><br>
 
-            <canvas id="wheelCanvas" width="500" height="500"></canvas>
+            <div style="position: relative; display: inline-block;">
+                <!-- Pointer Mano Emoji -->
+                <div id="hand-pointer" style="
+                    position: absolute;
+                    left: 50%;
+                    top: 0px;
+                    transform: translate(-50%, -90%);
+                    font-size: 2.5rem;
+                    z-index: 10;
+                    pointer-events: none;
+                    user-select: none;
+                ">👇</div>
+                <canvas id="wheelCanvas" width="500" height="500"></canvas>
+            </div>
 
             <br><br>
 
@@ -57,20 +71,31 @@
     ];
 
     let wheel;
+    // Usar el ángulo del backend
+    let lastRotationAngle = {{ rotation_angle|default:0 }};
+
+
+    // Paleta de colores para los segmentos
+    const segmentColors = [
+        '#f39c12', '#27ae60', '#2980b9', '#8e44ad', '#e67e22', '#16a085', '#c0392b', '#2c3e50', '#d35400', '#7f8c8d',
+        '#e84393', '#00b894', '#fdcb6e', '#0984e3', '#6c5ce7', '#00cec9', '#fab1a0', '#636e72', '#fd79a8', '#81ecec'
+    ];
 
     function buildWheel() {
-
         wheel = new Winwheel({
             canvasId: 'wheelCanvas',
+            lineWidth: 3,
             numSegments: participants.length,
-            segments: participants.map(p => ({
-                text: p.text
+            segments: participants.map((p, i) => ({
+                text: p.text,
+                fillStyle: segmentColors[i % segmentColors.length]
             })),
             animation: {
                 type: 'spinToStop',
-                duration: 5,
-                spins: 8
-            }
+                duration: 6,
+                spins: 15
+            },
+            rotationAngle: lastRotationAngle
         });
     }
 
@@ -106,8 +131,10 @@
         fetch("/draws/execute/{{ pasanaku.id }}/", {
             method: "POST",
             headers: {
-                "X-CSRFToken": "{{ csrf_token }}"
-            }
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: `rotation_angle=${encodeURIComponent(wheel.rotationAngle)}`
         })
         .then(response => response.json())
         .then(data => {
@@ -117,11 +144,17 @@
                 return;
             }
 
-            let winnerIndex = participants.findIndex(p => p.id === data.winner_id);
 
+            let winnerIndex = participants.findIndex(p => p.id === data.winner_id);
             let stopAt = winnerIndex + 1;
 
-            wheel.animation.stopAngle = wheel.getRandomForSegment(stopAt);
+            // Calcular el ángulo del segmento ganador
+            let segmentAngle = 360 / participants.length;
+            let targetAngle = wheel.getRandomForSegment(stopAt);
+            // Asegurar que el stopAngle sea mayor que el ángulo inicial
+            let spins = wheel.animation.spins || 15;
+            let stopAngle = lastRotationAngle + spins * 360 + (targetAngle - lastRotationAngle % 360);
+            wheel.animation.stopAngle = stopAngle;
 
 
             wheel.animation.callbackFinished = function() {
@@ -129,6 +162,17 @@
                     "🎉 Ganador: " + data.winner_name;
 
                 participants.splice(winnerIndex, 1);
+
+                // Guardar el ángulo final para el próximo giro en el backend (sin sortear)
+                lastRotationAngle = wheel.rotationAngle;
+                fetch(`/draws/save_angle/{{ pasanaku.id }}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: `rotation_angle=${encodeURIComponent(lastRotationAngle)}`
+                });
 
                 if (participants.length === 0) {
                     document.getElementById("spinButton").disabled = true;
@@ -140,7 +184,7 @@
                 // Refrescar la vista después de 2 segundos
                 setTimeout(function() {
                     window.location.reload();
-                }, 2000);
+                }, 3000);
             };
 
             wheel.startAnimation();
