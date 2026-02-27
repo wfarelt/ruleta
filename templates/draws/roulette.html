@@ -3,7 +3,12 @@
 
 <div class="container text-center mt-5">
     <div class="row">
-        <div class="col-md-8">
+        <!-- left message column -->
+        <div class="col-md-2" id="messageColumn">
+            <h3 id="winnerText"></h3>
+        </div>
+        <!-- center wheel and controls -->
+        <div class="col-md-6">
             <h2>{{ pasanaku.name }}</h2>
             <br><br>
 
@@ -31,9 +36,8 @@
             <button id="resetButton" class="btn btn-warning" style="display:none;">
                 Reiniciar Juego
             </button>
-
-            <h3 class="mt-4" id="winnerText"></h3>
         </div>
+        <!-- right participants list -->
         <div class="col-md-4">
             <h4>Participantes</h4>
             <ul class="list-group text-start">
@@ -72,7 +76,7 @@
 
     let wheel;
     // Usar el ángulo del backend
-    let lastRotationAngle = {{ rotation_angle|default:0 }};
+    let lastRotationAngle = ({{ rotation_angle|default:0 }}) % 360;
 
 
     // Paleta de colores para los segmentos
@@ -126,7 +130,10 @@
         });
     });
 
-    document.getElementById('spinButton').addEventListener('click', function() {
+    document.getElementById('spinButton').addEventListener('click', function() { // disable button on click to prevent double spins
+        // disable while spinning
+        const spinBtn = document.getElementById('spinButton');
+        spinBtn.disabled = true;
 
         fetch("/draws/execute/{{ pasanaku.id }}/", {
             method: "POST",
@@ -141,50 +148,38 @@
 
             if (!data.success) {
                 alert(data.message);
+                spinBtn.disabled = false;
                 return;
             }
-
 
             let winnerIndex = participants.findIndex(p => p.id === data.winner_id);
             let stopAt = winnerIndex + 1;
 
-            // Calcular el ángulo del segmento ganador
-            let segmentAngle = 360 / participants.length;
-            let targetAngle = wheel.getRandomForSegment(stopAt);
-            // Asegurar que el stopAngle sea mayor que el ángulo inicial
-            let spins = wheel.animation.spins || 15;
-            let stopAngle = lastRotationAngle + spins * 360 + (targetAngle - lastRotationAngle % 360);
-            wheel.animation.stopAngle = stopAngle;
+            let stopAngle = wheel.getRandomForSegment(stopAt);
 
+            wheel.animation.spins = 15;
+            wheel.animation.stopAngle = stopAngle;
 
             wheel.animation.callbackFinished = function() {
                 document.getElementById("winnerText").innerHTML =
                     "🎉 Ganador: " + data.winner_name;
 
-                participants.splice(winnerIndex, 1);
-
-                // Guardar el ángulo final para el próximo giro en el backend (sin sortear)
-                lastRotationAngle = wheel.rotationAngle;
-                fetch(`/draws/save_angle/{{ pasanaku.id }}/`, {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": "{{ csrf_token }}",
-                        "Content-Type": "application/x-www-form-urlencoded"
-                    },
-                    body: `rotation_angle=${encodeURIComponent(lastRotationAngle)}`
-                });
-
-                if (participants.length === 0) {
-                    document.getElementById("spinButton").disabled = true;
-                    document.getElementById("resetButton").style.display = "inline-block";
-                }
-
-                buildWheel();
-
-                // Refrescar la vista después de 2 segundos
                 setTimeout(function() {
+
+                    lastRotationAngle = wheel.rotationAngle % 360;
+
+                    fetch(`/draws/save_angle/{{ pasanaku.id }}/`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "Content-Type": "application/x-www-form-urlencoded"
+                        },
+                        body: `rotation_angle=${encodeURIComponent(lastRotationAngle)}`
+                    });
+
                     window.location.reload();
-                }, 3000);
+
+                }, 2000);
             };
 
             wheel.startAnimation();
