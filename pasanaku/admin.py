@@ -2,6 +2,14 @@ from django.contrib import admin
 from .models import Pasanaku, Participation
 
 
+class ParticipationInline(admin.TabularInline):
+    model = Participation
+    extra = 1
+    fields = ('participant', 'is_winner', 'is_temporarily_removed', 'winning_position')
+    readonly_fields = ('is_winner', 'winning_position')
+    raw_id_fields = ('participant',)
+
+
 @admin.register(Pasanaku)
 class PasanakuAdmin(admin.ModelAdmin):
     list_display = (
@@ -16,6 +24,7 @@ class PasanakuAdmin(admin.ModelAdmin):
 
     list_filter = ('status', 'start_date')
     search_fields = ('name',)
+    inlines = [ParticipationInline]
     
 @admin.register(Participation)
 class ParticipationAdmin(admin.ModelAdmin):

@@ -2,7 +2,7 @@ from django.shortcuts import render
 from pasanaku.models import Pasanaku, Participation
 from draws.models import Draw
 from participants.models import Participant
-from django.db.models import Count
+from django.db.models import Count, Q, F, ExpressionWrapper, IntegerField
 
 
 def dashboard(request):
@@ -14,12 +14,14 @@ def dashboard(request):
 		'pasanaku', 'participation__participant'
 	).order_by('-draw_date')[:5]
 
-	recent_winners = Participation.objects.filter(
-		is_winner=True
-	).select_related('participant', 'pasanaku').order_by('-created_at')[:5]
-
 	pasanakus_participants = Pasanaku.objects.annotate(
-		participants_count=Count('participations')
+		participants_count=Count('participations'),
+		drawn_games=Count('participations', filter=Q(participations__is_winner=True)),
+	).annotate(
+		pending_games=ExpressionWrapper(
+			F('total_participants') - F('drawn_games'),
+			output_field=IntegerField()
+		)
 	).order_by('-participants_count')[:10]
 
 	return render(request, 'core/dashboard.html', {
@@ -27,6 +29,5 @@ def dashboard(request):
 		'total_participants': total_participants,
 		'total_draws': total_draws,
 		'recent_draws': recent_draws,
-		'recent_winners': recent_winners,
 		'pasanakus_participants': pasanakus_participants,
 	})
