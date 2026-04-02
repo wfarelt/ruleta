@@ -10,6 +10,7 @@ class PasanakuAdmin(admin.ModelAdmin):
         'total_participants',
         'monthly_amount',
         'draws_per_month',
+        'draws_before_winner',
         'status'
     )
 
@@ -18,6 +19,6 @@ class PasanakuAdmin(admin.ModelAdmin):
     
 @admin.register(Participation)
 class ParticipationAdmin(admin.ModelAdmin):
-    list_display = ('participant', 'pasanaku', 'is_winner', 'winning_position')
-    list_filter = ('is_winner', 'pasanaku')
+    list_display = ('participant', 'pasanaku', 'is_winner', 'is_temporarily_removed', 'winning_position')
+    list_filter = ('is_winner', 'is_temporarily_removed', 'pasanaku')
     search_fields = ('participant__full_name',)

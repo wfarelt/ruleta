@@ -33,9 +33,18 @@
                 Girar Ruleta
             </button>
 
+            <button id="restoreTemporaryButton" class="btn btn-secondary" {% if temporarily_removed_count == 0 %}style="display:none;"{% endif %}>
+                Restaurar Quitados Temporalmente
+            </button>
+
             <button id="resetButton" class="btn btn-warning" style="display:none;">
                 Reiniciar Juego
             </button>
+
+            <p class="mt-3 text-muted">
+                Sorteos antes de ganador: <strong>{{ pasanaku.draws_before_winner }}</strong>
+                | Quitados temporalmente: <strong id="temporaryCount">{{ temporarily_removed_count }}</strong>
+            </p>
         </div>
         <!-- right participants list -->
         <div class="col-md-4">
@@ -45,7 +54,12 @@
                     {% if p.is_winner %}
                         <li class="list-group-item list-group-item-success">
                             {{ p.participant.full_name }} 
-                            <span class="badge bg-success float-end">Ganador</span>
+                            <span class="badge bg-success float-end"> Ganador #{{ p.winning_position }} </span>
+                        </li>
+                    {% elif p.is_temporarily_removed %}
+                        <li class="list-group-item list-group-item-warning">
+                            {{ p.participant.full_name }}
+                            <span class="badge bg-warning text-dark float-end">Temporalmente fuera</span>
                         </li>
                     {% else %}
                         <li class="list-group-item">{{ p.participant.full_name }}</li>
@@ -130,6 +144,26 @@
         });
     });
 
+    const restoreTemporaryButton = document.getElementById("restoreTemporaryButton");
+    if (restoreTemporaryButton) {
+        restoreTemporaryButton.addEventListener("click", function() {
+            fetch("/draws/restore-temporary/{{ pasanaku.id }}/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || "No se pudo restaurar participantes temporales.");
+                }
+            });
+        });
+    }
+
     document.getElementById('spinButton').addEventListener('click', function() { // disable button on click to prevent double spins
         // disable while spinning
         const spinBtn = document.getElementById('spinButton');
@@ -152,8 +186,15 @@
                 return;
             }
 
-            let winnerIndex = participants.findIndex(p => p.id === data.winner_id);
-            let stopAt = winnerIndex + 1;
+            let selectedIndex = participants.findIndex(p => p.id === data.selected_id);
+
+            if (selectedIndex < 0) {
+                alert("No se encontró al participante seleccionado en la ruleta actual.");
+                spinBtn.disabled = false;
+                return;
+            }
+
+            let stopAt = selectedIndex + 1;
 
             let stopAngle = wheel.getRandomForSegment(stopAt);
 
@@ -161,8 +202,14 @@
             wheel.animation.stopAngle = stopAngle;
 
             wheel.animation.callbackFinished = function() {
-                document.getElementById("winnerText").innerHTML =
-                    "🎉 Ganador: " + data.winner_name;
+                if (data.is_winner) {
+                    document.getElementById("winnerText").innerHTML =
+                        "🎉 Ganador: " + data.selected_name;
+                } else {
+                    document.getElementById("winnerText").innerHTML =
+                        "⏳ Fuera temporalmente: " + data.selected_name +
+                        " (Paso " + data.current_step + " de " + data.draws_before_winner + ")";
+                }
 
                 setTimeout(function() {
 

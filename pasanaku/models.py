@@ -35,6 +35,16 @@ class Pasanaku(models.Model):
         verbose_name="Draws Per Month"
     )
 
+    draws_before_winner = models.PositiveIntegerField(
+        default=1,
+        verbose_name="Draws Before Winner"
+    )
+
+    current_pre_draw_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Current Pre Draw Count"
+    )
+
 
     status = models.CharField(
         max_length=20,
@@ -73,6 +83,10 @@ class Participation(models.Model):
     )
 
     is_winner = models.BooleanField(
+        default=False
+    )
+
+    is_temporarily_removed = models.BooleanField(
         default=False
     )
 
